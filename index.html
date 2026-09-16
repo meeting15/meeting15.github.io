@@ -18,7 +18,7 @@
             overflow: hidden;
             user-select: none; 
         }
-
+        
         #splash-gate {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -52,22 +52,19 @@
             border: 2px solid #00ff66;
             box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
             margin-bottom: 20px;
-            animation: image-flicker 0.15s infinite;
-            cursor: help;
+            display: none; 
         }
 
         #terminal-log {
-            width: 75%;
-            height: 15vh;
-            font-size: 0.75rem;
+            width: 85%;
+            height: 80vh; 
+            font-size: 0.85rem;
             color: #00ff66;
             overflow: hidden;
             text-align: left;
             white-space: pre-line;
-            opacity: 0.8;
-            margin-bottom: 20px;
+            opacity: 0.9;
         }
-
         .glitch {
             font-size: 0.95rem; 
             font-weight: normal; 
@@ -76,18 +73,14 @@
             letter-spacing: 2px;
             animation: shake 0.12s infinite, color-flash 0.35s infinite steps(1);
             
+            display: none; 
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.5s ease;
+            cursor: pointer;
         }
 
-        .arg-image:hover + .glitch, .glitch:hover, .arg-image:active + .glitch {
-            opacity: 1;
-        }
-
-        @keyframes image-flicker {
-            0% { opacity: 0.95; }
-            50% { opacity: 1; }
-            100% { opacity: 0.98; }
+        .glitch.revealed {
+            opacity: 1 !important;
         }
 
         @keyframes shake {
@@ -116,7 +109,7 @@
 
     <div id="terminal-log"></div>
 
-    <img src="mistero.png" alt="[CORRUPTED_FILE]" class="arg-image">
+    <img src="mistero.png" alt="[CORRUPTED_FILE]" class="arg-image" id="main-image">
 
     <div class="glitch" id="scramble-text" data-value="it's walking behind you">it's walking behind you</div>
 
@@ -124,6 +117,8 @@
         const audio = document.getElementById('ambient-audio');
         const gate = document.getElementById('splash-gate');
         const logWindow = document.getElementById('terminal-log');
+        const mainImage = document.getElementById('main-image');
+        const scrambleText = document.getElementById('scramble-text');
 
         const logLines = [
             "fetching repository metadata",
@@ -145,12 +140,13 @@
 
         function startTerminalLog() {
             let lineIndex = 0;
-            const maxVisibleLines = 6;
+            const maxVisibleLines = 25; 
             let activeLines = [];
 
             const logInterval = setInterval(() => {
                 let currentLine = "";
-                if (Math.random() < 0.4 && lineIndex < logLines.length) {
+                
+                if (Math.random() < 0.35 && lineIndex < logLines.length) {
                     currentLine = `> ${logLines[lineIndex]}`;
                     lineIndex++;
                 } else {
@@ -164,7 +160,20 @@
                 }
 
                 logWindow.innerText = activeLines.join("\n");
-            }, 120); 
+
+                if (lineIndex >= logLines.length) {
+                    clearInterval(logInterval);
+                    
+                    setTimeout(() => {
+                        logWindow.style.height = "12vh";
+                        logWindow.style.fontSize = "0.75rem";
+                        logWindow.innerText = "> initialization aborted.\n> connection closed.\n> [object detected]";
+
+                        mainImage.style.display = "block";
+                        scrambleText.style.display = "block";
+                    }, 1500); 
+                }
+            }, 75); 
         }
 
         gate.addEventListener('click', () => {
@@ -173,13 +182,15 @@
             startTerminalLog(); 
         }); 
 
+        scrambleText.addEventListener('click', () => {
+            scrambleText.classList.add('revealed');
+        });
 
         const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
-        const element = document.getElementById("scramble-text");
-        const originalText = element.dataset.value;
+        const originalText = scrambleText.dataset.value;
 
         setInterval(() => {
-            element.innerText = originalText
+            scrambleText.innerText = originalText
                 .split("")
                 .map((char, index) => {
                     if (char === " " || char === "'") return char; 
