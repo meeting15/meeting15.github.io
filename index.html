@@ -53,6 +53,10 @@
             box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
             margin-bottom: 20px;
             display: none; 
+            cursor: pointer;
+            transition: filter 0.3s ease;
+            position: relative;
+            z-index: 10;
         }
 
         #terminal-log {
@@ -65,6 +69,7 @@
             white-space: pre-line;
             opacity: 0.9;
         }
+
         .glitch {
             font-size: 0.95rem; 
             font-weight: normal; 
@@ -74,13 +79,47 @@
             animation: shake 0.12s infinite, color-flash 0.35s infinite steps(1);
             
             display: none; 
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            opacity: 0; 
+            transition: opacity 0.3s ease;
             cursor: pointer;
+            z-index: 10;
         }
 
         .glitch.revealed {
-            opacity: 1 !important;
+            display: block;
+        }
+
+        .glitch.revealed:hover {
+            opacity: 1;
+        }
+
+        #password-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+
+        #password-input {
+            background: #030303;
+            border: 2px solid #00ff66;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            font-size: 1rem;
+            outline: none;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+            letter-spacing: 2px;
+        }
+
+        #password-status {
+            font-size: 0.8rem;
+            margin-top: 8px;
+            height: 1.2rem;
+            color: #ff3333;
+            letter-spacing: 1px;
         }
 
         @keyframes shake {
@@ -103,13 +142,23 @@
 
     <div id="splash-gate">[ click anywhere to initialize terminal ]</div>
 
-    <!-- LOG_ENTRY_15: this isn't an experiment-->
+    <!-- LOG_ENTRY_1.5: it's very much like a dream but it isnt -->
 
-    <audio id="ambient-audio" src="audio.mp3" loop></audio>
+    <audio id="ambient-audio" loop preload="auto">
+        <source src="audio.mp3" type="audio/mpeg">
+        <source src="audio.mp3" type="audio/mp3">
+    </audio>
+
+    <audio id="click-audio-template" src="click.mp3" preload="auto"></audio>
 
     <div id="terminal-log"></div>
 
     <img src="mistero.png" alt="[CORRUPTED_FILE]" class="arg-image" id="main-image">
+
+    <div id="password-container">
+        <input type="password" id="password-input" placeholder="ENTER ACCESS CODE" autocomplete="off">
+        <div id="password-status"></div>
+    </div>
 
     <div class="glitch" id="scramble-text" data-value="it's walking behind you">it's walking behind you</div>
 
@@ -119,6 +168,28 @@
         const logWindow = document.getElementById('terminal-log');
         const mainImage = document.getElementById('main-image');
         const scrambleText = document.getElementById('scramble-text');
+        const passwordContainer = document.getElementById('password-container');
+        const passwordInput = document.getElementById('password-input');
+        const passwordStatus = document.getElementById('password-status');
+        const clickAudioTemplate = document.getElementById('click-audio-template');
+
+        const TARGET_HASH = "0fd924362117d03662f0e86e580ab01c70d3fa88dbffce4224017e86e5fbad52"; 
+        const REDIRECT_URL = "https://meeting15/override.github.io"; 
+
+        async function hashString(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function playPitchedClick(clickCount) {
+            const clickAudio = clickAudioTemplate.cloneNode(true); 
+            const pitchScale = Math.max(0.7, 1.0 - (clickCount * 0.06)); 
+            clickAudio.playbackRate = pitchScale;
+            clickAudio.play().catch(err => console.warn("Click audio play failed:", err));
+        }
 
         const logLines = [
             "fetching repository metadata",
@@ -137,6 +208,24 @@
             "package installed successfully",
             "you should not dig further.sys has unexpectedly failed!"
         ];
+
+        function startScrambleAnimation() {
+            const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
+            const originalText = scrambleText.dataset.value;
+
+            setInterval(() => {
+                scrambleText.innerText = originalText
+                    .split("")
+                    .map((char, index) => {
+                        if (char === " " || char === "'") return char; 
+                        if (Math.random() < 0.3) {
+                            return letters[Math.floor(Math.random() * letters.length)];
+                        }
+                        return originalText[index];
+                    })
+                    .join("");
+            }, 80);
+        }
 
         function startTerminalLog() {
             let lineIndex = 0;
@@ -170,7 +259,9 @@
                         logWindow.innerText = "> initialization aborted.\n> connection closed.\n> [object detected]";
 
                         mainImage.style.display = "block";
-                        scrambleText.style.display = "block";
+                        scrambleText.classList.add('revealed');
+                        
+                        startScrambleAnimation();
                     }, 1500); 
                 }
             }, 75); 
@@ -178,29 +269,48 @@
 
         gate.addEventListener('click', () => {
             gate.style.display = 'none'; 
-            audio.play().catch(error => console.log("Audio playback blocked."));
+
+            audio.load();
+            audio.play().catch(error => {
+                console.warn("Audio play failed:", error);
+            });
+            
             startTerminalLog(); 
         }); 
 
-        scrambleText.addEventListener('click', () => {
-            scrambleText.classList.add('revealed');
+        let imageClickCount = 0;
+
+        mainImage.addEventListener('click', () => {
+            imageClickCount++;
+            
+            playPitchedClick(imageClickCount);
+
+            const newBrightness = Math.max(0, 70 - (imageClickCount * 14));
+            mainImage.style.filter = `grayscale(100%) contrast(200%) brightness(${newBrightness}%) blur(0.5px)`;
+
+            if (imageClickCount >= 5) {
+                mainImage.style.display = 'none';
+                passwordContainer.style.display = 'flex';
+                passwordInput.focus();
+            }
         });
 
-        const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
-        const originalText = scrambleText.dataset.value;
-
-        setInterval(() => {
-            scrambleText.innerText = originalText
-                .split("")
-                .map((char, index) => {
-                    if (char === " " || char === "'") return char; 
-                    if (Math.random() < 0.3) {
-                        return letters[Math.floor(Math.random() * letters.length)];
-                    }
-                    return originalText[index];
-                })
-                .join("");
-        }, 80);
+        passwordInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const userHash = await hashString(passwordInput.value);
+                
+                if (userHash === TARGET_HASH) {
+                    passwordStatus.style.color = "#00ff66";
+                    passwordStatus.innerText = "> ACCESS GRANTED";
+                    setTimeout(() => {
+                        window.location.href = REDIRECT_URL;
+                    }, 1000);
+                } else {
+                    passwordStatus.innerText = "> ACCESS DENIED";
+                    passwordInput.value = "";
+                }
+            }
+        });
     </script>
 
 </body>
