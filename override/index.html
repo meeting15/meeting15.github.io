@@ -230,11 +230,11 @@
         let audioCtx;
 
         function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const amp = audioCtx.createGain();
             osc.type = type;
             osc.frequency.value = freq;
-            osc.gain.value = 0;
             osc.connect(amp);
             amp.connect(audioCtx.destination);
             amp.gain.setValueAtTime(0, startTime);
