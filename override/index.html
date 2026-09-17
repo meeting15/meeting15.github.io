@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG_ENTRY_15</title>
+    <style>
+        body {
+            background-color: #030303;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #boot-gate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #030303;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #00ff66;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #doc {
+            max-width: 720px;
+            width: 100%;
+            height: auto;
+            min-height: min-content;
+            border: 2px solid #00ff66;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
+            padding: clamp(15px, 4vw, 35px);
+            position: relative;
+            z-index: 10;
+            background: #050505;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #doc.visible {
+            opacity: 1;
+        }
+
+        #boot-log {
+            width: 100%;
+            max-width: 720px;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
+            color: #00ff66;
+            opacity: 0.85;
+            white-space: pre-line;
+            text-align: left;
+            min-height: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .doc-header {
+            font-size: clamp(0.65rem, 1.8vw, 0.8rem);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px dashed #00ff66;
+            padding-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            transition: opacity 0.5s ease;
+            flex-shrink: 0;
+        }
+
+        .doc-header.visible { opacity: 0.6; }
+
+        .doc-title {
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            opacity: 0;
+            flex-shrink: 0;
+        }
+
+        .doc-title.visible {
+            opacity: 1;
+            animation: color-flash 1.4s infinite steps(1);
+        }
+
+        .doc-body {
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            line-height: 1.9;
+            white-space: pre-wrap;
+            flex-grow: 1;
+            word-break: break-word;
+        }
+
+        .redacted {
+            display: inline-block;
+            position: relative;
+            letter-spacing: 1px;
+            padding: 0 2px;
+            cursor: default;
+            color: #00ff66;
+            text-shadow: 0 0 6px rgba(0, 255, 102, 0.6);
+        }
+
+        .redacted.glitching {
+            animation: shake 0.15s infinite;
+        }
+
+        .doc-footer {
+            margin-top: 20px;
+            font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+            opacity: 0;
+            border-top: 1px dashed #00ff66;
+            padding-top: 10px;
+            transition: opacity 0.6s ease;
+            flex-shrink: 0;
+        }
+
+        .doc-footer.visible { opacity: 0.5; }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1em;
+            background: #00ff66;
+            vertical-align: -2px;
+            animation: blink 0.9s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0, 0) skew(0deg); }
+            20% { transform: translate(-1px, 1px) skew(-3deg); }
+            40% { transform: translate(1px, -1px) skew(3deg); }
+            60% { transform: translate(-1px, -1px) skew(-2deg); }
+            80% { transform: translate(1px, 1px) skew(2deg); }
+            100% { transform: translate(0, 0) skew(0deg); }
+        }
+
+        @keyframes color-flash {
+            0%, 100% { color: #ffffff; text-shadow: 0 0 8px #fff; }
+            40% { color: #030303; text-shadow: none; }
+            70% { color: #ffffff; text-shadow: -2px 0 red, 2px 0 blue; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="boot-gate">[ click to initialize terminal ]</div>
+
+    <div id="boot-log"></div>
+
+    <div id="doc">
+        <div>
+            <div class="doc-header" id="doc-header">
+                <span>restricted_log_15.txt</span>
+                <span>clearance: restricted</span>
+            </div>
+
+            <div class="doc-title" id="doc-title">Log Entry 15</div>
+
+            <div class="doc-body" id="doc-body"></div>
+        </div>
+
+        <div class="doc-footer" id="doc-footer">&gt; connection stable. do not close this window.</div>
+    </div>
+
+    <script>
+        const bootGate = document.getElementById('boot-gate');
+        const bootLog = document.getElementById('boot-log');
+        const doc = document.getElementById('doc');
+        const docHeader = document.getElementById('doc-header');
+        const docTitle = document.getElementById('doc-title');
+        const docBody = document.getElementById('doc-body');
+        const docFooter = document.getElementById('doc-footer');
+
+        const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
+
+        const bodyParts = [
+            { text: "To all engineers and personnel,\n\n" },
+            { text: "We are observing " },
+            { redacted: true },
+            { text: " in Subject " },
+            { redacted: true },
+            { text: ". Despite the Amnestic administered after the physical casualty of " },
+            { redacted: true },
+            { text: ", the psychological framework is rejecting the simulation's boundaries.\n" },
+            { redacted: true },
+            { text: " into the Minecraft game code, anchoring his remnants to " },
+            { redacted: true },
+            { text: ". This is not an experiment." }
+        ];
+
+        let audioCtx;
+
+        function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const amp = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(amp);
+            amp.connect(audioCtx.destination);
+            amp.gain.setValueAtTime(0, startTime);
+            amp.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+            amp.gain.linearRampToValueAtTime(0, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+        }
+
+        function typeTick() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const freq = 1800 + Math.random() * 400; 
+            beep(freq, now, 0.015, 0.02, 'square');
+        }
+
+        function playBootSound() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+
+            const hum = audioCtx.createOscillator();
+            const humGain = audioCtx.createGain();
+            hum.type = 'sawtooth';
+            hum.frequency.setValueAtTime(40, now);
+            hum.frequency.linearRampToValueAtTime(60, now + 2.0);
+            humGain.gain.setValueAtTime(0, now);
+            humGain.gain.linearRampToValueAtTime(0.04, now + 1.0);
+            humGain.gain.linearRampToValueAtTime(0.015, now + 4.0);
+            humGain.gain.linearRampToValueAtTime(0, now + 16.5);
+            hum.connect(humGain);
+            humGain.connect(audioCtx.destination);
+            hum.start(now);
+            hum.stop(now + 16.6);
+
+            beep(1200, now + 0.1, 0.09, 0.05);
+            beep(880, now + 1.4, 0.07, 0.04);
+            beep(660, now + 2.8, 0.06, 0.04);
+            beep(660, now + 4.2, 0.05, 0.03);
+            beep(660, now + 5.6, 0.05, 0.03);
+            beep(660, now + 6.9, 0.06, 0.04); 
+            beep(990, now + 7.7, 0.08, 0.045); 
+            beep(1400, now + 10.3, 0.14, 0.06); 
+        }
+
+        const bootLines = [
+            "> POST ... checking core memory",
+            "> loading kernel_core.sys",
+            "> mounting /archive",
+            "> decrypting log stream",
+            "> authenticating clearance level",
+            "> rendering document"
+        ];
+
+        function runBootLog(totalMs, doneCallback) {
+            let i = 0;
+            const step = totalMs / bootLines.length;
+            const interval = setInterval(() => {
+                bootLog.innerText = bootLines.slice(0, i + 1).join("\n");
+                i++;
+                if (i >= bootLines.length) {
+                    clearInterval(interval);
+                    setTimeout(doneCallback, step);
+                }
+            }, step);
+        }
+
+        function startScramblingElement(el) {
+            el.classList.add('glitching');
+            const original = "[[REDACTED]]";
+            
+            el.dataset.intervalId = setInterval(() => {
+                el.innerText = original
+                    .split("")
+                    .map(char => {
+                        if (char === "[" || char === "]") return char;
+                        if (Math.random() < 0.35) {
+                            return letters[Math.floor(Math.random() * letters.length)];
+                        }
+                        return char;
+                    })
+                    .join("");
+            }, 90);
+        }
+
+        function typeBody(totalMs, doneCallback) {
+            let totalUnitsCount = 0;
+            bodyParts.forEach(part => {
+                if (part.text) {
+                    totalUnitsCount += part.text.length;
+                } else if (part.redacted) {
+                    totalUnitsCount += 12; 
+                }
+            });
+
+            const baseDelay = totalMs / totalUnitsCount;
+
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            docBody.appendChild(cursor);
+
+            let partIdx = 0;
+
+            function processPart() {
+                if (partIdx >= bodyParts.length) {
+                    doneCallback();
+                    return;
+                }
+
+                const currentPart = bodyParts[partIdx];
+
+                if (currentPart.text) {
+                    let charIdx = 0;
+                    function typeChar() {
+                        if (charIdx < currentPart.text.length) {
+                            const ch = currentPart.text[charIdx];
+                            const textNode = document.createTextNode(ch);
+                            docBody.insertBefore(textNode, cursor);
+
+                            if (ch !== "\n" && ch !== " ") {
+                                typeTick();
+                            }
+                            charIdx++;
+                            setTimeout(typeChar, baseDelay);
+                        } else {
+                            partIdx++;
+                            processPart();
+                        }
+                    }
+                    typeChar();
+                } else if (currentPart.redacted) {
+                    const redactedSpan = document.createElement('span');
+                    redactedSpan.className = 'redacted';
+                    redactedSpan.innerText = "[[REDACTED]]";
+
+                    docBody.insertBefore(redactedSpan, cursor);
+                    startScramblingElement(redactedSpan);
+                    typeTick();
+
+                    partIdx++;
+                    setTimeout(processPart, baseDelay * 12);
+                }
+            }
+
+            processPart();
+        }
+
+        bootGate.addEventListener('click', () => {
+            bootGate.style.display = 'none';
+            playBootSound();
+            doc.classList.add('visible');
+
+            runBootLog(6900, () => {
+                bootLog.style.opacity = '0';
+                docHeader.classList.add('visible');
+                setTimeout(() => {
+                    docTitle.classList.add('visible');
+
+                    setTimeout(() => {
+                        typeBody(15000, () => {
+                            setTimeout(() => {
+                                docFooter.classList.add('visible');
+                            }, 200);
+                        });
+                    }, 2600);
+                }, 800);
+            });
+        });
+    </script>
+
+</body>
+</html>
