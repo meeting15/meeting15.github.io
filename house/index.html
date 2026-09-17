@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABODE</title>
+    <style>
+        body {
+            background-color: #030303;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #boot-gate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #030303;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #00ff66;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #container {
+            max-width: 720px;
+            width: 100%;
+            height: auto;
+            min-height: min-content;
+            padding: clamp(15px, 4vw, 35px);
+            position: relative;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #container.visible {
+            opacity: 1;
+        }
+
+        .abode-image {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            max-height: 55vh;
+            object-fit: contain;
+            margin-bottom: 25px;
+        }
+
+        .abode-text {
+            font-size: clamp(1rem, 3vw, 1.4rem);
+            letter-spacing: 4px;
+            text-transform: lowercase;
+            text-align: center;
+            color: #00ff66;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .abode-text.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="boot-gate">[ click to initialize terminal ]</div>
+
+    <div id="container">
+        <img src="deathbed.png" alt="[ABODE]" class="abode-image">
+        <div class="abode-text" id="abode-text">abode</div>
+    </div>
+
+    <script>
+        const bootGate = document.getElementById('boot-gate');
+        const container = document.getElementById('container');
+        const abodeText = document.getElementById('abode-text');
+
+        let audioCtx;
+
+        function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const amp = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(amp);
+            amp.connect(audioCtx.destination);
+            amp.gain.setValueAtTime(0, startTime);
+            amp.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+            amp.gain.linearRampToValueAtTime(0, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+        }
+
+        function playBootSound() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+
+            beep(880, now + 0.1, 0.08, 0.04);
+            beep(660, now + 0.3, 0.12, 0.05);
+        }
+
+        bootGate.addEventListener('click', () => {
+            bootGate.style.display = 'none';
+            playBootSound();
+            container.classList.add('visible');
+            setTimeout(() => {
+                abodeText.classList.add('visible');
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>
