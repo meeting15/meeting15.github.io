@@ -52,8 +52,8 @@
         #doc {
             max-width: 720px;
             width: 100%;
-            height: auto; 
-            min-height: max(480px, 60vh);
+            height: auto;
+            min-height: min-content;
             border: 2px solid #00ff66;
             box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
             padding: clamp(15px, 4vw, 35px);
@@ -86,14 +86,16 @@
 
         .doc-header {
             font-size: clamp(0.65rem, 1.8vw, 0.8rem);
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             opacity: 0;
             margin-bottom: 20px;
             border-bottom: 1px dashed #00ff66;
             padding-bottom: 10px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
+            gap: 8px;
             transition: opacity 0.5s ease;
             flex-shrink: 0;
         }
