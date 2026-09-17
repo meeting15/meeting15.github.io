@@ -15,7 +15,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
+            padding: 20px;
             box-sizing: border-box;
             overflow-x: hidden;
             user-select: none;
@@ -41,20 +41,22 @@
             justify-content: center;
             align-items: center;
             color: #00ff66;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             cursor: pointer;
             letter-spacing: 2px;
             text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
         }
 
         #doc {
             max-width: 720px;
             width: 100%;
-            height: 480px; 
-            min-height: 480px;
+            height: auto; 
+            min-height: max(480px, 60vh);
             border: 2px solid #00ff66;
             box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
-            padding: 30px 35px;
+            padding: clamp(15px, 4vw, 35px);
             position: relative;
             z-index: 10;
             background: #050505;
@@ -71,9 +73,9 @@
         }
 
         #boot-log {
-            width: 85%;
+            width: 100%;
             max-width: 720px;
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
             color: #00ff66;
             opacity: 0.85;
             white-space: pre-line;
@@ -83,7 +85,7 @@
         }
 
         .doc-header {
-            font-size: 0.8rem;
+            font-size: clamp(0.65rem, 1.8vw, 0.8rem);
             letter-spacing: 3px;
             text-transform: uppercase;
             opacity: 0;
@@ -99,7 +101,7 @@
         .doc-header.visible { opacity: 0.6; }
 
         .doc-title {
-            font-size: 1.3rem;
+            font-size: clamp(1rem, 3vw, 1.3rem);
             letter-spacing: 2px;
             text-transform: uppercase;
             margin-bottom: 20px;
@@ -113,10 +115,11 @@
         }
 
         .doc-body {
-            font-size: 0.95rem;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
             line-height: 1.9;
             white-space: pre-wrap;
             flex-grow: 1;
+            word-break: break-word;
         }
 
         .redacted {
@@ -135,7 +138,7 @@
 
         .doc-footer {
             margin-top: 20px;
-            font-size: 0.75rem;
+            font-size: clamp(0.65rem, 1.8vw, 0.75rem);
             opacity: 0;
             border-top: 1px dashed #00ff66;
             padding-top: 10px;
@@ -229,7 +232,7 @@
             const amp = audioCtx.createGain();
             osc.type = type;
             osc.frequency.value = freq;
-            amp.gain.value = 0;
+            osc.gain.value = 0;
             osc.connect(amp);
             amp.connect(audioCtx.destination);
             amp.gain.setValueAtTime(0, startTime);
@@ -388,7 +391,7 @@
                     docTitle.classList.add('visible');
 
                     setTimeout(() => {
-                        typeBody(15000, () => { //typewrite speed
+                        typeBody(15000, () => {
                             setTimeout(() => {
                                 docFooter.classList.add('visible');
                             }, 200);

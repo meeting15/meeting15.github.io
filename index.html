@@ -15,6 +15,8 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
             overflow: hidden;
             user-select: none; 
         }
@@ -28,10 +30,12 @@
             justify-content: center;
             align-items: center;
             color: #00ff66;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             cursor: pointer;
             letter-spacing: 2px;
             text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
         }
 
         body::before {
@@ -46,8 +50,10 @@
         }
 
         .arg-image {
-            max-width: 75%;
+            width: 90%;
+            max-width: 500px;
             max-height: 45vh;
+            object-fit: contain;
             filter: grayscale(100%) contrast(200%) brightness(70%) blur(0.5px);
             border: 2px solid #00ff66;
             box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
@@ -60,18 +66,20 @@
         }
 
         #terminal-log {
-            width: 85%;
-            height: 80vh; 
-            font-size: 0.85rem;
+            width: 90%;
+            max-width: 720px;
+            height: 60vh; 
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
             color: #00ff66;
             overflow: hidden;
             text-align: left;
             white-space: pre-line;
             opacity: 0.9;
+            word-break: break-all;
         }
 
         .glitch {
-            font-size: 0.95rem; 
+            font-size: clamp(0.8rem, 2.5vw, 0.95rem); 
             font-weight: normal; 
             text-transform: lowercase; 
             position: relative;
@@ -83,6 +91,7 @@
             transition: opacity 0.3s ease;
             cursor: pointer;
             z-index: 10;
+            text-align: center;
         }
 
         .glitch.revealed {
@@ -99,23 +108,27 @@
             align-items: center;
             margin-bottom: 20px;
             z-index: 10;
+            width: 100%;
         }
 
         #password-input {
+            width: 80%;
+            max-width: 300px;
             background: #030303;
             border: 2px solid #00ff66;
             color: #00ff66;
             font-family: 'Courier New', Courier, monospace;
             padding: 10px;
-            font-size: 1rem;
+            font-size: clamp(0.85rem, 2vw, 1rem);
             outline: none;
             text-align: center;
             box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
             letter-spacing: 2px;
+            box-sizing: border-box;
         }
 
         #password-status {
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
             margin-top: 8px;
             height: 1.2rem;
             color: #ff3333;
@@ -141,8 +154,6 @@
 <body>
 
     <div id="splash-gate">[ click anywhere to initialize terminal ]</div>
-
-    <!-- LOG_ENTRY_1.5: it's very much like a dream but it isnt -->
 
     <audio id="ambient-audio" loop preload="auto">
         <source src="audio.mp3" type="audio/mpeg">
@@ -208,6 +219,8 @@
             "package installed successfully",
             "you should not dig further.sys has unexpectedly failed!"
         ];
+
+        // This is not your fault.This is not your fault.This is not your fault.This is not your fault.This is not y
 
         function startScrambleAnimation() {
             const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
