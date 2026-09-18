@@ -13,11 +13,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100dvh;
             margin: 0;
-            padding: 20px;
+            padding: clamp(16px, 3vw, 28px);
             box-sizing: border-box;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             user-select: none; 
         }
         
@@ -66,16 +67,27 @@
         }
 
         #terminal-log {
-            width: 90%;
+            width: min(90vw, 720px);
             max-width: 720px;
-            height: 60vh; 
-            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            min-height: 12vh;
+            height: clamp(200px, 60vh, 420px);
+            font-size: clamp(0.72rem, 1.7vw, 0.85rem);
             color: #00ff66;
             overflow: hidden;
             text-align: left;
             white-space: pre-line;
             opacity: 0.9;
             word-break: break-all;
+        }
+
+        @media (max-width: 640px) {
+            #password-container {
+                margin-top: 12px;
+            }
+
+            .arg-image {
+                max-height: 36vh;
+            }
         }
 
         .glitch {
@@ -186,9 +198,11 @@
 
         const a_HASH = "0fd924362117d03662f0e86e580ab01c70d3fa88dbffce4224017e86e5fbad52"; 
         const b_HASH = "d6e21286621a8586f7e54720ab5a39c93acc2f4b8fba7a16ec1c24d69a08c613"; 
+        const c_HASH = "254f710bae878d0bf92fab81890145bd57dc996edf61cd4aa13f8c2f2e2caa1e";
 
         const REDIRECT_URL = "https://meeting15.github.io/override/index.html"; 
         const REDIRECT_URL_b = "https://meeting15.github.io/home/index.html"; 
+        const REDIRECT_URL_c = "https://meeting15.github.io/diary/index.html"; 
 
         async function hashString(str) {
             const encoder = new TextEncoder();
@@ -325,6 +339,12 @@
                     passwordStatus.innerText = "> ROUTING TO ABODE...";
                     setTimeout(() => {
                         window.location.href = REDIRECT_URL_b;
+                    }, 1000);
+                } else if (userHash === c_HASH) {
+                    passwordStatus.style.color = "#00ff66";
+                    passwordStatus.innerText = "> ROUTING TO HIS DIARIES...";
+                    setTimeout(() => {
+                        window.location.href = REDIRECT_URL_c;
                     }, 1000);
                 } else {
                     passwordStatus.style.color = "#ff3333";

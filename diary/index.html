@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIARY</title>
+    <style>
+        :root {
+            --bg: #030303;
+            --panel: rgba(6, 10, 8, 0.96);
+            --line: #00ff66;
+            --text: #dfffe9;
+            --text-soft: rgba(223, 255, 233, 0.8);
+            --shadow: rgba(0, 255, 102, 0.28);
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--line);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            margin: 0;
+            padding: clamp(16px, 3vw, 32px);
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #boot-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--line);
+            font-size: clamp(0.75rem, 2.3vw, 0.95rem);
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #boot-log {
+            position: relative;
+            z-index: 12;
+            width: min(820px, 100%);
+            min-height: 1.2em;
+            margin: 0 auto 18px;
+            font-size: clamp(0.68rem, 1.9vw, 0.85rem);
+            line-height: 1.7;
+            opacity: 0.88;
+            white-space: pre-line;
+            color: var(--line);
+            text-align: center; 
+        }
+
+        #doc {
+            position: relative;
+            z-index: 10;
+            width: min(980px, 100%);
+            background: var(--panel);
+            border: 2px solid var(--line);
+            box-shadow: 0 0 22px var(--shadow);
+            padding: clamp(18px, 4vw, 38px);
+            opacity: 0;
+            transition: opacity 0.45s ease;
+        }
+
+        #doc.visible {
+            opacity: 1;
+        }
+
+        .tag {
+            font-size: clamp(0.58rem, 1.5vw, 0.75rem);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--line);
+            opacity: 0;
+            margin-bottom: 16px;
+            border-bottom: 1px dashed var(--line);
+            padding-bottom: 10px;
+            transition: opacity 0.5s ease;
+        }
+
+        .tag.visible { opacity: 0.82; }
+
+        h1 {
+            margin: 0 0 18px;
+            font-size: clamp(1.7rem, 4vw, 3rem);
+            letter-spacing: 7px;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 0 12px rgba(255,255,255,0.45), 0 0 18px rgba(0,255,102,0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            min-height: 1.2em;
+        }
+
+        h1.visible { opacity: 1; }
+        h1.flashing { animation: color-flash 1.4s infinite steps(1); }
+
+        .intro {
+            margin: 0 0 28px;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            line-height: 1.8;
+            letter-spacing: 1px;
+            color: var(--text);
+            max-width: 760px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            min-height: 1.6em;
+        }
+
+        .intro.visible { opacity: 1; }
+
+        .gallery {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(18px, 3vw, 28px);
+            margin-top: 18px;
+        }
+
+        .panel {
+            margin: 0;
+            background: rgba(8, 12, 10, 0.92);
+            border: 1px solid rgba(0, 255, 102, 0.7);
+            box-shadow: inset 0 0 12px rgba(0, 255, 102, 0.08);
+            padding: 12px;
+            max-width: 480px;
+            width: 100%;
+
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .panel img {
+            display: block;
+            width: 100%;
+            height: clamp(220px, 28vw, 320px);
+            object-fit: cover;
+            border: 1px solid var(--line);
+            background: #111;
+            filter: saturate(1.25) contrast(1.08) brightness(1.06);
+        }
+
+        .caption {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(0, 255, 102, 0.6);
+            color: var(--text-soft);
+            font-size: clamp(0.72rem, 1.7vw, 0.82rem);
+            line-height: 1.8;
+            letter-spacing: 0.8px;
+            min-height: 1.6em; 
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 7px;
+            height: 1em;
+            background: var(--line);
+            vertical-align: -2px;
+            animation: blink 0.9s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
+        }
+
+        @keyframes color-flash {
+            0%, 100% { color: #ffffff; text-shadow: 0 0 8px #fff; }
+            40% { color: #030303; text-shadow: none; }
+            70% { color: #ffffff; text-shadow: -2px 0 red, 2px 0 blue; }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0, 0) skew(0deg); }
+            20% { transform: translate(-1px, 1px) skew(-3deg); }
+            40% { transform: translate(1px, -1px) skew(3deg); }
+            60% { transform: translate(-1px, -1px) skew(-2deg); }
+            80% { transform: translate(1px, 1px) skew(2deg); }
+            100% { transform: translate(0, 0) skew(0deg); }
+        }
+
+        .glitch-phrase {
+            display: inline-block;
+        }
+
+
+        .glitch-phrase.glitching {
+            animation: shake var(--shake-dur, 0.16s) infinite;
+        }
+
+        .footer {
+            margin-top: 28px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--line);
+            font-size: clamp(0.62rem, 1.7vw, 0.76rem);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(0, 255, 102, 0.85);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .footer.visible { opacity: 1; }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 14px;
+            }
+
+            h1 {
+                letter-spacing: 4px;
+            }
+
+            .tag,
+            .footer {
+                letter-spacing: 1.5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="boot-gate">[ click to initialize terminal ]</div>
+
+    <div id="boot-log"></div>
+
+    <div id="doc">
+        <div class="tag" id="doc-tag">archive // user: Xx_VO1D_xX // restricted</div>
+        <h1 id="doc-title" data-text="VOID"></h1>
+
+        <p class="intro" id="doc-intro" data-text="This is my personal diary, a record of my experiences and thoughts of what i think is not a dream. I have been trying to remember the events that led me here, but my memory is fragmented and unreliable. I have been trying to piece together the fragments of what i remember, but it is difficult to know what is real and what is not. I have been trying to find a way to make sense of it all, but it is a struggle. These are some images that don't stick with me."></p>
+
+        <div class="gallery" id="gallery">
+            <figure class="panel" id="panel-1">
+                <img src="image_items.png" alt="image_items">
+                <figcaption class="caption" id="caption-1" data-text="image_items - I did not place these items here. I never even thought to place them in that chest. I keep my stuff ordered and not put in a random order."></figcaption>
+            </figure>
+
+            <figure class="panel" id="panel-2">
+                <img src="image_blue_flower.png" alt="image_blue_flower">
+                <figcaption class="caption" id="caption-2" data-text="image_blue_flower - These flowers are not mine. I dislike them. Someone else must have placed them here."></figcaption>
+            </figure>
+
+            <figure class="panel" id="panel-3">
+                <img src="remnant_whywhywhywhywhywhywhy.png" alt="remnant">
+                <figcaption class="caption" id="caption-3" data-prefix="remnant_whywhywhywhywhywhywhy - " data-phrase="I don't want to remember." data-reps="12"></figcaption>
+            </figure>
+        </div>
+
+        <div class="footer" id="doc-footer">[void] // NULLNULLNULLNULLNULL // access stable</div>
+    </div>
+
+    <script>
+        const bootGate = document.getElementById('boot-gate');
+        const bootLog = document.getElementById('boot-log');
+        const doc = document.getElementById('doc');
+        const docTag = document.getElementById('doc-tag');
+        const docTitle = document.getElementById('doc-title');
+        const docIntro = document.getElementById('doc-intro');
+        const docFooter = document.getElementById('doc-footer');
+
+        const panels = [
+            { el: document.getElementById('panel-1'), caption: document.getElementById('caption-1'), glitch: false },
+            { el: document.getElementById('panel-2'), caption: document.getElementById('caption-2'), glitch: false },
+            { el: document.getElementById('panel-3'), caption: document.getElementById('caption-3'), glitch: true }
+        ];
+
+        const CHAR_DELAY = 55; 
+        const glitchLetters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
+
+        let audioCtx;
+
+        function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const amp = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(amp);
+            amp.connect(audioCtx.destination);
+            amp.gain.setValueAtTime(0, startTime);
+            amp.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+            amp.gain.linearRampToValueAtTime(0, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+        }
+
+        function revealBeep() {
+            if (!audioCtx) return;
+            beep(760, audioCtx.currentTime, 0.09, 0.04);
+        }
+
+        function typeTick() {
+            if (!audioCtx) return;
+            const freq = 1800 + Math.random() * 400;
+            beep(freq, audioCtx.currentTime, 0.015, 0.02, 'square');
+        }
+
+        function typeTickPitched(level) {
+            if (!audioCtx) return;
+            const pitchFactor = Math.max(0.35, 1 - level * 0.055);
+            const freq = (1800 + Math.random() * 400) * pitchFactor;
+            beep(freq, audioCtx.currentTime, 0.02, 0.02, 'square');
+        }
+
+        function playBootSound() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+
+            const hum = audioCtx.createOscillator();
+            const humGain = audioCtx.createGain();
+            hum.type = 'sawtooth';
+            hum.frequency.setValueAtTime(40, now);
+            hum.frequency.linearRampToValueAtTime(58, now + 2.0);
+            humGain.gain.setValueAtTime(0, now);
+            humGain.gain.linearRampToValueAtTime(0.04, now + 1.0);
+            humGain.gain.linearRampToValueAtTime(0.015, now + 4.0);
+            humGain.gain.linearRampToValueAtTime(0, now + 26.0);
+            hum.connect(humGain);
+            humGain.connect(audioCtx.destination);
+            hum.start(now);
+            hum.stop(now + 26.1);
+
+            beep(1300, now + 0.12, 0.09, 0.05);
+            beep(900, now + 1.2, 0.07, 0.04);
+            beep(720, now + 2.3, 0.06, 0.04);
+            beep(700, now + 4.1, 0.05, 0.03);
+            beep(700, now + 5.5, 0.05, 0.03);
+            beep(700, now + 6.8, 0.06, 0.04);
+            beep(990, now + 7.7, 0.08, 0.045);
+        }
+
+        const bootLines = [
+            "> POST ... verifying signature",
+            "> loading archive: my_hidden_diary.bin",
+            "> mount /diary/segment_01",
+            "> auth: subject = Xx_VO1D_xX",
+            "> decrypting memory remnants",
+            "> rendering documentary"
+        ];
+
+        function runBootLog(totalMs, doneCallback) {
+            let i = 0;
+            const step = totalMs / bootLines.length;
+            const interval = setInterval(() => {
+                bootLog.innerText = bootLines.slice(0, i + 1).join("\n");
+                i++;
+                if (i >= bootLines.length) {
+                    clearInterval(interval);
+                    setTimeout(doneCallback, step);
+                }
+            }, step);
+        }
+
+        function typeText(el, fullText, doneCallback) {
+            el.textContent = '';
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            el.appendChild(cursor);
+
+            let i = 0;
+            function step() {
+                if (i < fullText.length) {
+                    const ch = fullText[i];
+                    el.insertBefore(document.createTextNode(ch), cursor);
+                    if (ch !== " ") typeTick();
+                    i++;
+                    setTimeout(step, CHAR_DELAY);
+                } else {
+                    cursor.remove();
+                    doneCallback();
+                }
+            }
+            step();
+        }
+        function typeCaptionWithGlitch(captionEl, doneCallback) {
+            const prefix = captionEl.dataset.prefix;
+            const phrase = captionEl.dataset.phrase;
+            const reps = parseInt(captionEl.dataset.reps, 10);
+
+            captionEl.textContent = '';
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            captionEl.appendChild(cursor);
+
+            let charIdx = 0;
+            function typePrefixChar() {
+                if (charIdx < prefix.length) {
+                    const ch = prefix[charIdx];
+                    captionEl.insertBefore(document.createTextNode(ch), cursor);
+                    if (ch !== " ") typeTick();
+                    charIdx++;
+                    setTimeout(typePrefixChar, CHAR_DELAY);
+                } else {
+                    typeRep(0);
+                }
+            }
+
+            function typeRep(repIndex) {
+                if (repIndex >= reps) {
+                    cursor.remove();
+                    doneCallback();
+                    return;
+                }
+
+                const level = repIndex + 1;
+
+                const shakeDur = Math.max(0.09, 0.16 - level * 0.006);
+                const corruptProb = Math.min(0.32, level * 0.022);
+                const corruptTickMs = Math.max(90, 170 - level * 6);
+                const charDelay = CHAR_DELAY + level * 9;
+
+                const span = document.createElement('span');
+                span.className = 'glitch-phrase glitching';
+                span.style.setProperty('--shake-dur', shakeDur + 's');
+                captionEl.insertBefore(span, cursor);
+
+                const revealed = [];
+
+                function render() {
+                    span.textContent = revealed
+                        .map(ch => {
+                            if (ch === " " || ch === ".") return ch;
+                            if (Math.random() < corruptProb) {
+                                return glitchLetters[Math.floor(Math.random() * glitchLetters.length)];
+                            }
+                            return ch;
+                        })
+                        .join("");
+                }
+
+                const corruptInterval = setInterval(render, corruptTickMs);
+
+                let pIdx = 0;
+                function typePhraseChar() {
+                    if (pIdx < phrase.length) {
+                        revealed.push(phrase[pIdx]);
+                        render();
+                        if (phrase[pIdx] !== " ") typeTickPitched(level);
+                        pIdx++;
+                        setTimeout(typePhraseChar, charDelay);
+                    } else {
+                        setTimeout(() => typeRep(repIndex + 1), 200);
+                    }
+                }
+                typePhraseChar();
+            }
+
+            typePrefixChar();
+        }
+
+        function revealPanelsSequentially(index, doneCallback) {
+            if (index >= panels.length) {
+                doneCallback();
+                return;
+            }
+
+            const { el, caption, glitch } = panels[index];
+            el.classList.add('visible');
+            revealBeep();
+
+            setTimeout(() => {
+                const onDone = () => {
+                    setTimeout(() => {
+                        revealPanelsSequentially(index + 1, doneCallback);
+                    }, 500);
+                };
+
+                if (glitch) {
+                    typeCaptionWithGlitch(caption, onDone);
+                } else {
+                    typeText(caption, caption.dataset.text, onDone);
+                }
+            }, 2000);
+        }
+
+        bootGate.addEventListener('click', () => {
+            bootGate.style.display = 'none';
+            playBootSound();
+
+            runBootLog(6800, () => {
+                bootLog.style.opacity = '0';
+                setTimeout(() => {
+                    bootLog.style.display = 'none';
+                }, 260);
+
+                doc.classList.add('visible');
+                docTag.classList.add('visible');
+
+                setTimeout(() => {
+                    docTitle.classList.add('visible');
+                    typeText(docTitle, docTitle.dataset.text, () => {
+                        docTitle.classList.add('flashing');
+
+                        setTimeout(() => {
+                            docIntro.classList.add('visible');
+                            typeText(docIntro, docIntro.dataset.text, () => {
+                                setTimeout(() => {
+                                    revealPanelsSequentially(0, () => {
+                                        setTimeout(() => {
+                                            docFooter.classList.add('visible');
+                                        }, 400);
+                                    });
+                                }, 1600);
+                            });
+                        }, 900);
+                    });
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>
