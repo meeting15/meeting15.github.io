@@ -106,6 +106,8 @@
             opacity: 0;
             transition: opacity 0.5s ease;
             text-align: center;
+            cursor: pointer;
+            z-index: 5;
         }
 
         .secret-text.visible {
@@ -122,9 +124,29 @@
             text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
             opacity: 0;
             transition: opacity 0.6s ease;
+            cursor: pointer;
         }
 
         .abode-text.visible {
+            opacity: 1;
+        }
+
+        .riddle-text {
+            display: none;
+            max-width: 620px;
+            color: #00ff66;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            line-height: 1.8;
+            letter-spacing: 1.5px;
+            text-transform: lowercase;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.45);
+        }
+
+        .riddle-text.visible {
+            display: block;
             opacity: 1;
         }
     </style>
@@ -139,12 +161,23 @@
             <div class="secret-text" id="secret-text">isuot://ctgza.immipa.dnl/gfoa/e/1baEbMKp6umd6Vg_fyhy74KywU2DoGPIXF/zkdxy</div>
         </div>
         <div class="abode-text" id="abode-text">abode</div>
+        <div class="riddle-text" id="riddle-text">
+            Ulp gfwdpm vpxbmyd sszefh ty ulp dpmw,<br>
+            jfx esf ttwpx slt jwpe encpwd eii gzjh.<br>
+            Te cvplulpd xmespye ljv, te txlcfw htulzfu ijpt,<br>
+            e xzoyxpox zq gppdi yyofv esf wvtfw.<br><br>
+            Jzv wplsgs eii olso slmphlzw qzs e mwpayzvx qldi,<br>
+            mfu xsp uvfptx qcjiyo txlyew ty br zafr dabgp.<br>
+            Foqzgjrr. Foxstootyh. E spbzj, sppwzx jclni.<br>
+            L mphj eseaafh tytmop b jczaiy rbqp.
+        </div>
     </div>
 
     <script>
         const bootGate = document.getElementById('boot-gate');
         const container = document.getElementById('container');
         const abodeText = document.getElementById('abode-text');
+        const riddleText = document.getElementById('riddle-text');
         const abodeImage = document.getElementById('abode-image');
         const secretText = document.getElementById('secret-text');
 
@@ -152,6 +185,8 @@
         bellSound.preload = 'auto';
 
         let clickCount = 0;
+        let textClickCount = 0;
+        let textUnlocked = false;
         let audioCtx;
 
         function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
@@ -177,12 +212,39 @@
             beep(660, now + 0.3, 0.12, 0.05);
         }
 
+        function triggerTextUnlock() {
+            if (textUnlocked) return;
+
+            textClickCount += 1;
+            bellSound.currentTime = 0;
+            bellSound.playbackRate = Math.max(0.35, 1 - (textClickCount * 0.12));
+            bellSound.play().catch(() => {});
+
+            const darkness = Math.max(0.15, 1 - (textClickCount / 5));
+            secretText.style.opacity = darkness;
+            secretText.style.filter = `brightness(${darkness})`;
+            secretText.style.color = darkness < 0.5 ? '#00bb4f' : '#00ff66';
+
+            if (textClickCount >= 5) {
+                textUnlocked = true;
+                secretText.style.display = 'none';
+                riddleText.classList.add('visible');
+                riddleText.style.display = 'block';
+                riddleText.style.position = 'absolute';
+                riddleText.style.top = '50%';
+                riddleText.style.left = '50%';
+                riddleText.style.transform = 'translate(-50%, -50%)';
+                riddleText.style.width = 'min(620px, 80vw)';
+            }
+        }
+
         abodeImage.addEventListener('click', () => {
             if (clickCount >= 15) return;
 
             clickCount += 1;
 
             bellSound.currentTime = 0;
+            bellSound.playbackRate = 1;
             bellSound.play().catch(() => {});
 
             if (clickCount >= 15) {
@@ -194,6 +256,8 @@
             const brightness = Math.max(0, 1 - (clickCount / 15));
             abodeImage.style.filter = `brightness(${brightness})`;
         });
+
+        secretText.addEventListener('click', triggerTextUnlock);
 
         bootGate.addEventListener('click', () => {
             bootGate.style.display = 'none';
