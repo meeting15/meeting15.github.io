@@ -70,13 +70,47 @@
             opacity: 1;
         }
 
-        .abode-image {
+        .image-frame {
+            position: relative;
             width: 100%;
             max-width: 500px;
-            height: auto;
-            max-height: 55vh;
-            object-fit: contain;
+            height: 50vh;
+            max-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 25px;
+        }
+
+        .abode-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+            transition: filter 0.2s ease, opacity 0.4s ease;
+        }
+
+        .abode-image.destroyed {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .secret-text {
+            display: none;
+            position: absolute;
+            color: #00ff66;
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            letter-spacing: 3px;
+            text-transform: lowercase;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.7);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-align: center;
+        }
+
+        .secret-text.visible {
+            display: block;
+            opacity: 1;
         }
 
         .abode-text {
@@ -100,7 +134,10 @@
     <div id="boot-gate">[ click to initialize terminal ]</div>
 
     <div id="container">
-        <img src="deathbed.png" alt="[ABODE]" class="abode-image">
+        <div class="image-frame">
+            <img src="deathbed.png" alt="[ABODE]" class="abode-image" id="abode-image">
+            <div class="secret-text" id="secret-text">isuot://ctgza.immipa.dnl/gfoa/e/1baEbMKp6umd6Vg_fyhy74KywU2DoGPIXF/zkdxy</div>
+        </div>
         <div class="abode-text" id="abode-text">abode</div>
     </div>
 
@@ -108,7 +145,13 @@
         const bootGate = document.getElementById('boot-gate');
         const container = document.getElementById('container');
         const abodeText = document.getElementById('abode-text');
+        const abodeImage = document.getElementById('abode-image');
+        const secretText = document.getElementById('secret-text');
 
+        const bellSound = new Audio('../click.mp3');
+        bellSound.preload = 'auto';
+
+        let clickCount = 0;
         let audioCtx;
 
         function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
@@ -133,6 +176,24 @@
             beep(880, now + 0.1, 0.08, 0.04);
             beep(660, now + 0.3, 0.12, 0.05);
         }
+
+        abodeImage.addEventListener('click', () => {
+            if (clickCount >= 15) return;
+
+            clickCount += 1;
+
+            bellSound.currentTime = 0;
+            bellSound.play().catch(() => {});
+
+            if (clickCount >= 15) {
+                abodeImage.classList.add('destroyed');
+                secretText.classList.add('visible');
+                return;
+            }
+
+            const brightness = Math.max(0, 1 - (clickCount / 15));
+            abodeImage.style.filter = `brightness(${brightness})`;
+        });
 
         bootGate.addEventListener('click', () => {
             bootGate.style.display = 'none';
