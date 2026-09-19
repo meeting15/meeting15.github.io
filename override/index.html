@@ -33,6 +33,19 @@
             pointer-events: none;
         }
 
+        body:not(.unlocked) #boot-gate,
+        body:not(.unlocked) #boot-log,
+        body:not(.unlocked) #doc {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.unlocked #access-gate {
+            display: none !important;
+        }
+
         #boot-gate {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -48,6 +61,56 @@
             text-transform: lowercase;
             text-align: center;
             padding: 20px;
+        }
+
+        #access-gate {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 3, 3, 0.98);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #access-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: min(420px, 90vw);
+            padding: 24px 18px;
+            border: 2px solid #00ff66;
+            box-shadow: 0 0 18px rgba(0, 255, 102, 0.25);
+            background: #050505;
+        }
+
+        #access-label {
+            font-size: clamp(0.68rem, 1.8vw, 0.82rem);
+            letter-spacing: 3px;
+            text-transform: lowercase;
+            color: #00ff66;
+        }
+
+        #access-input {
+            width: min(260px, 80%);
+            background: #030303;
+            border: 2px solid #00ff66;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            font-size: clamp(0.8rem, 2vw, 0.95rem);
+            outline: none;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        #access-status {
+            min-height: 1.2em;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+            color: #ff3333;
+            letter-spacing: 1px;
         }
 
         #doc {
@@ -194,6 +257,14 @@
 </head>
 <body>
 
+    <div id="access-gate">
+        <div id="access-box">
+            <div id="access-label">[ access required ]</div>
+            <input type="password" id="access-input" placeholder="ENTER ACCESS CODE" autocomplete="off">
+            <div id="access-status"></div>
+        </div>
+    </div>
+
     <div id="boot-gate">[ click to initialize terminal ]</div>
 
     <div id="boot-log"></div>
@@ -214,6 +285,7 @@
     </div>
 
     <script>
+        const ACCESS_HASH = "0fd924362117d03662f0e86e580ab01c70d3fa88dbffce4224017e86e5fbad52";
         const bootGate = document.getElementById('boot-gate');
         const bootLog = document.getElementById('boot-log');
         const doc = document.getElementById('doc');
@@ -221,6 +293,9 @@
         const docTitle = document.getElementById('doc-title');
         const docBody = document.getElementById('doc-body');
         const docFooter = document.getElementById('doc-footer');
+        const accessGate = document.getElementById('access-gate');
+        const accessInput = document.getElementById('access-input');
+        const accessStatus = document.getElementById('access-status');
 
         const letters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
 
@@ -331,6 +406,14 @@
             }, 90);
         }
 
+        async function hashString(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         function typeBody(totalMs, doneCallback) {
             let totalUnitsCount = 0;
             bodyParts.forEach(part => {
@@ -392,6 +475,32 @@
 
             processPart();
         }
+
+        accessInput.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+
+            const rawInput = accessInput.value.trim().toLowerCase();
+            const userHash = await hashString(rawInput);
+
+            if (userHash === ACCESS_HASH) {
+                accessStatus.style.color = '#00ff66';
+                accessStatus.innerText = '> ACCESS GRANTED';
+                accessInput.value = '';
+                document.body.classList.add('unlocked');
+                setTimeout(() => {
+                    accessGate.style.display = 'none';
+                    bootGate.click();
+                }, 500);
+                return;
+            }
+
+            accessStatus.style.color = '#ff3333';
+            accessStatus.innerText = '> ACCESS DENIED';
+            accessInput.value = '';
+        });
+
+        document.body.classList.remove('unlocked');
+        setTimeout(() => accessInput.focus(), 200);
 
         bootGate.addEventListener('click', () => {
             bootGate.style.display = 'none';

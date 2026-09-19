@@ -44,6 +44,24 @@
             z-index: 2;
         }
 
+        body:not(.unlocked) #boot-gate,
+        body:not(.unlocked) #boot-log,
+        body:not(.unlocked) #doc,
+        body:not(.unlocked) .tag,
+        body:not(.unlocked) h1,
+        body:not(.unlocked) .intro,
+        body:not(.unlocked) .gallery,
+        body:not(.unlocked) .footer {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.unlocked #access-gate {
+            display: none !important;
+        }
+
         #boot-gate {
             position: fixed;
             inset: 0;
@@ -59,6 +77,56 @@
             text-transform: lowercase;
             text-align: center;
             padding: 20px;
+        }
+
+        #access-gate {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 3, 3, 0.98);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #access-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: min(420px, 90vw);
+            padding: 24px 18px;
+            border: 2px solid #00ff66;
+            box-shadow: 0 0 18px rgba(0, 255, 102, 0.25);
+            background: #050505;
+        }
+
+        #access-label {
+            font-size: clamp(0.68rem, 1.8vw, 0.82rem);
+            letter-spacing: 3px;
+            text-transform: lowercase;
+            color: #00ff66;
+        }
+
+        #access-input {
+            width: min(260px, 80%);
+            background: #030303;
+            border: 2px solid #00ff66;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            font-size: clamp(0.8rem, 2vw, 0.95rem);
+            outline: none;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        #access-status {
+            min-height: 1.2em;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+            color: #ff3333;
+            letter-spacing: 1px;
         }
 
         #boot-log {
@@ -214,7 +282,6 @@
             display: inline-block;
         }
 
-
         .glitch-phrase.glitching {
             animation: shake var(--shake-dur, 0.16s) infinite;
         }
@@ -247,9 +314,83 @@
                 letter-spacing: 1.5px;
             }
         }
+
+
+        #bluescreen {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: #0000aa;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: none;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #bluescreen.visible {
+            display: flex;
+        }
+
+        .bsod-titlebar {
+            background: #ffffff;
+            color: #0000aa;
+            font-weight: bold;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            padding: 4px 10px;
+            letter-spacing: 1px;
+        }
+
+        .bsod-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(20px, 5vw, 60px);
+        }
+
+        .bsod-text {
+            max-width: 680px;
+            width: 100%;
+            font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+            line-height: 1.75;
+            white-space: pre-wrap;
+        }
+
+        .bsod-cursor {
+            display: inline-block;
+            width: 0.6em;
+            height: 1em;
+            background: #ffffff;
+            vertical-align: -2px;
+            animation: blink 0.7s steps(1) infinite;
+        }
     </style>
 </head>
 <body>
+    <div id="access-gate">
+        <div id="access-box">
+            <div id="access-label">[ access required ]</div>
+            <input type="password" id="access-input" placeholder="ENTER ACCESS CODE" autocomplete="off">
+            <div id="access-status"></div>
+        </div>
+    </div>
+
+    <div id="bluescreen">
+        <div class="bsod-titlebar">DIARY_PAGE</div>
+        <div class="bsod-body">
+            <div class="bsod-text">An exception 0E has occurred at 0028:C0011E36 in VxD VMM(01) +
+00010E36. This was called from 0028:C0001A92 in VxD VMBE11(01) +
+0000BE11. It may not be possible to continue normally.
+
+* IS THIS WHAT YOU EXPECTED?
+* IS THIS WHAT YOU WANTED?
+
+Press any key to continue <span class="bsod-cursor"></span></div>
+        </div>
+    </div>
+
     <div id="boot-gate">[ click to initialize terminal ]</div>
 
     <div id="boot-log"></div>
@@ -281,6 +422,7 @@
     </div>
 
     <script>
+        const ACCESS_HASH = "8feff8fe50f7a02340ee3764dfd3676ebb695c3e5d4e0e3ef57fc73afe0aa717";
         const bootGate = document.getElementById('boot-gate');
         const bootLog = document.getElementById('boot-log');
         const doc = document.getElementById('doc');
@@ -288,17 +430,25 @@
         const docTitle = document.getElementById('doc-title');
         const docIntro = document.getElementById('doc-intro');
         const docFooter = document.getElementById('doc-footer');
+        const accessGate = document.getElementById('access-gate');
+        const accessInput = document.getElementById('access-input');
+        const accessStatus = document.getElementById('access-status');
 
         const panels = [
-            { el: document.getElementById('panel-1'), caption: document.getElementById('caption-1'), glitch: false },
-            { el: document.getElementById('panel-2'), caption: document.getElementById('caption-2'), glitch: false },
-            { el: document.getElementById('panel-3'), caption: document.getElementById('caption-3'), glitch: true }
+            { el: document.getElementById('panel-1'), caption: document.getElementById('caption-1'), glitch: false, wait: 3200 },
+            { el: document.getElementById('panel-2'), caption: document.getElementById('caption-2'), glitch: false, wait: 3200 },
+            { el: document.getElementById('panel-3'), caption: document.getElementById('caption-3'), glitch: true, wait: 5200 }
         ];
 
-        const CHAR_DELAY = 55; 
+        const CHAR_DELAY = 55;
+        const CHAR_DELAY_PANEL3 = 95;
+
         const glitchLetters = "☠☣ΞΨΩαβγδεζηθικλμνξοπρστυφχψω0123456789§¶@#$æœçƒ";
 
         let audioCtx;
+        let hum, humGain; 
+        let activeCorruptIntervals = []; 
+        const bluescreen = document.getElementById('bluescreen');
 
         function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
             if (!audioCtx) return;
@@ -328,7 +478,7 @@
 
         function typeTickPitched(level) {
             if (!audioCtx) return;
-            const pitchFactor = Math.max(0.35, 1 - level * 0.055);
+            const pitchFactor = Math.max(0.3, 1 - level * 0.06);
             const freq = (1800 + Math.random() * 400) * pitchFactor;
             beep(freq, audioCtx.currentTime, 0.02, 0.02, 'square');
         }
@@ -337,8 +487,8 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const now = audioCtx.currentTime;
 
-            const hum = audioCtx.createOscillator();
-            const humGain = audioCtx.createGain();
+            hum = audioCtx.createOscillator();
+            humGain = audioCtx.createGain();
             hum.type = 'sawtooth';
             hum.frequency.setValueAtTime(40, now);
             hum.frequency.linearRampToValueAtTime(58, now + 2.0);
@@ -368,6 +518,75 @@
             "> decrypting memory remnants",
             "> rendering documentary"
         ];
+
+        async function hashString(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function makeDistortionCurve(amount) {
+            const samples = 44100;
+            const curve = new Float32Array(samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < samples; i++) {
+                const x = (i * 2) / samples - 1;
+                curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+            }
+            return curve;
+        }
+
+
+        function playCrashSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const duration = 2.2;
+
+            const bufferSize = audioCtx.sampleRate * duration;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+
+            const shaper = audioCtx.createWaveShaper();
+            shaper.curve = makeDistortionCurve(420);
+            shaper.oversample = '4x';
+
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.0001, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.16, now + 0.025);
+            noiseGain.gain.setValueAtTime(0.16, now + duration - 0.05);
+            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+            noiseSource.connect(shaper);
+            shaper.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noiseSource.start(now);
+            noiseSource.stop(now + duration);
+
+            for (let i = 0; i < 16; i++) {
+                const t = now + Math.random() * duration;
+                const freq = 100 + Math.random() * 3200;
+                const type = Math.random() < 0.5 ? 'square' : 'sawtooth';
+                beep(freq, t, 0.02 + Math.random() * 0.03, 0.05, type);
+            }
+        }
+
+        function triggerBluescreen() {
+            activeCorruptIntervals.forEach(id => clearInterval(id));
+            activeCorruptIntervals = [];
+
+            try { hum && hum.stop(audioCtx.currentTime); } catch (e) {}
+
+            playCrashSound();
+            bluescreen.classList.add('visible');
+        }
 
         function runBootLog(totalMs, doneCallback) {
             let i = 0;
@@ -403,10 +622,13 @@
             }
             step();
         }
+
         function typeCaptionWithGlitch(captionEl, doneCallback) {
             const prefix = captionEl.dataset.prefix;
             const phrase = captionEl.dataset.phrase;
             const reps = parseInt(captionEl.dataset.reps, 10);
+            const halfwayLevel = Math.ceil(reps / 2); 
+            const halfwayCharIdx = Math.floor(phrase.length / 2); 
 
             captionEl.textContent = '';
             const cursor = document.createElement('span');
@@ -420,7 +642,7 @@
                     captionEl.insertBefore(document.createTextNode(ch), cursor);
                     if (ch !== " ") typeTick();
                     charIdx++;
-                    setTimeout(typePrefixChar, CHAR_DELAY);
+                    setTimeout(typePrefixChar, CHAR_DELAY_PANEL3);
                 } else {
                     typeRep(0);
                 }
@@ -435,10 +657,11 @@
 
                 const level = repIndex + 1;
 
-                const shakeDur = Math.max(0.09, 0.16 - level * 0.006);
-                const corruptProb = Math.min(0.32, level * 0.022);
-                const corruptTickMs = Math.max(90, 170 - level * 6);
-                const charDelay = CHAR_DELAY + level * 9;
+                const shakeDur = Math.max(0.08, 0.17 - level * 0.007);
+                const corruptProb = Math.min(0.38, level * 0.026);
+                const corruptTickMs = Math.max(80, 165 - level * 6);
+                const charDelay = CHAR_DELAY_PANEL3 + level * 16;
+                const gapAfter = 260 + level * 55;
 
                 const span = document.createElement('span');
                 span.className = 'glitch-phrase glitching';
@@ -460,9 +683,16 @@
                 }
 
                 const corruptInterval = setInterval(render, corruptTickMs);
+                activeCorruptIntervals.push(corruptInterval);
 
                 let pIdx = 0;
                 function typePhraseChar() {
+
+                    if (level === halfwayLevel && pIdx === halfwayCharIdx) {
+                        triggerBluescreen();
+                        return;
+                    }
+
                     if (pIdx < phrase.length) {
                         revealed.push(phrase[pIdx]);
                         render();
@@ -470,7 +700,7 @@
                         pIdx++;
                         setTimeout(typePhraseChar, charDelay);
                     } else {
-                        setTimeout(() => typeRep(repIndex + 1), 200);
+                        setTimeout(() => typeRep(repIndex + 1), gapAfter);
                     }
                 }
                 typePhraseChar();
@@ -485,7 +715,7 @@
                 return;
             }
 
-            const { el, caption, glitch } = panels[index];
+            const { el, caption, glitch, wait } = panels[index];
             el.classList.add('visible');
             revealBeep();
 
@@ -493,7 +723,7 @@
                 const onDone = () => {
                     setTimeout(() => {
                         revealPanelsSequentially(index + 1, doneCallback);
-                    }, 500);
+                    }, 900);
                 };
 
                 if (glitch) {
@@ -501,8 +731,34 @@
                 } else {
                     typeText(caption, caption.dataset.text, onDone);
                 }
-            }, 2000);
+            }, wait);
         }
+
+        accessInput.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+
+            const rawInput = accessInput.value.trim().toLowerCase();
+            const userHash = await hashString(rawInput);
+
+            if (userHash === ACCESS_HASH) {
+                accessStatus.style.color = '#00ff66';
+                accessStatus.innerText = '> ACCESS GRANTED';
+                accessInput.value = '';
+                document.body.classList.add('unlocked');
+                setTimeout(() => {
+                    accessGate.style.display = 'none';
+                    bootGate.click();
+                }, 500);
+                return;
+            }
+
+            accessStatus.style.color = '#ff3333';
+            accessStatus.innerText = '> ACCESS DENIED';
+            accessInput.value = '';
+        });
+
+        document.body.classList.remove('unlocked');
+        setTimeout(() => accessInput.focus(), 200);
 
         bootGate.addEventListener('click', () => {
             bootGate.style.display = 'none';
@@ -529,7 +785,7 @@
                                     revealPanelsSequentially(0, () => {
                                         setTimeout(() => {
                                             docFooter.classList.add('visible');
-                                        }, 400);
+                                        }, 900);
                                     });
                                 }, 1600);
                             });
