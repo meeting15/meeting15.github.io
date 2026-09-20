@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WORLD_01_ARCHIVE</title>
+    <style>
+        :root {
+            --bg: #030303;
+            --panel: rgba(6, 10, 8, 0.96);
+            --line: #00ff66;
+            --chat: #dfffe9;
+            --err: #ff3333;
+            --shadow: rgba(0, 255, 102, 0.28);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--line);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            margin: 0;
+            padding: clamp(16px, 3vw, 32px);
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        body:not(.unlocked) #boot-gate,
+        body:not(.unlocked) #terminal {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.unlocked #access-gate {
+            display: none !important;
+        }
+
+        #boot-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--line);
+            font-size: clamp(0.75rem, 2.3vw, 0.95rem);
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #access-gate {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 3, 3, 0.98);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #access-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: min(420px, 90vw);
+            padding: 24px 18px;
+            border: 2px solid var(--line);
+            box-shadow: 0 0 18px var(--shadow);
+            background: #050505;
+        }
+
+        #access-label {
+            font-size: clamp(0.68rem, 1.8vw, 0.82rem);
+            letter-spacing: 3px;
+            text-transform: lowercase;
+            color: var(--line);
+        }
+
+        #access-input {
+            width: min(260px, 80%);
+            background: var(--bg);
+            border: 2px solid var(--line);
+            color: var(--line);
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            font-size: clamp(0.8rem, 2vw, 0.95rem);
+            outline: none;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        #access-status {
+            min-height: 1.2em;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+            color: var(--err);
+            letter-spacing: 1px;
+        }
+
+        #terminal {
+            position: relative;
+            z-index: 10;
+            width: min(850px, 100%);
+            height: clamp(300px, 75vh, 650px);
+            background: var(--panel);
+            border: 2px solid var(--line);
+            box-shadow: 0 0 22px var(--shadow);
+            padding: clamp(18px, 4vw, 24px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: clamp(0.75rem, 1.8vw, 0.9rem);
+            line-height: 1.5;
+            word-wrap: break-word;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        #terminal.visible {
+            opacity: 1;
+        }
+
+        .log-line {
+            opacity: 0;
+            animation: fadeIn 0.1s forwards;
+        }
+
+        .log-info { color: rgba(0, 255, 102, 0.75); }
+        .log-chat { 
+            color: var(--chat); 
+            text-shadow: 0 0 6px rgba(0, 255, 102, 0.35); 
+        }
+
+        .sys-err {
+            opacity: 1 !important;
+            color: var(--err);
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+            margin: 6px 0;
+            letter-spacing: 0.5px;
+            display: block;
+            white-space: pre-wrap;
+        }
+
+        #terminal::-webkit-scrollbar { width: 8px; }
+        #terminal::-webkit-scrollbar-track { background: #030303; border-left: 1px solid rgba(0, 255, 102, 0.2); }
+        #terminal::-webkit-scrollbar-thumb { background: var(--line); }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="access-gate">
+        <div id="access-box">
+            <div id="access-label">[ access required ]</div>
+            <input type="password" id="access-input" placeholder="ENTER ACCESS CODE" autocomplete="off">
+            <div id="access-status"></div>
+        </div>
+    </div>
+
+    <div id="boot-gate">[ click to initialize server log archive ]</div>
+
+    <div id="terminal"></div>
+
+    <script>
+
+        const ACCESS_HASH = "c17edaae86e4016a583e098582f6dbf3eccade8ef83747df9ba617ded9d31309";
+
+        const bootGate = document.getElementById('boot-gate');
+        const accessGate = document.getElementById('access-gate');
+        const accessInput = document.getElementById('access-input');
+        const accessStatus = document.getElementById('access-status');
+        const terminal = document.getElementById('terminal');
+
+        let audioCtx;
+
+        function beep(freq, startTime, duration, gain = 0.05, type = 'square') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const amp = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(amp);
+            amp.connect(audioCtx.destination);
+            amp.gain.setValueAtTime(0, startTime);
+            amp.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+            amp.gain.linearRampToValueAtTime(0, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+        }
+
+        function typeTick() {
+            if (!audioCtx) return;
+            const freq = 1200 + Math.random() * 200;
+            beep(freq, audioCtx.currentTime, 0.02, 0.015, 'square');
+        }
+
+        function playGlitchSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const droneGain = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+            osc1.frequency.setValueAtTime(70, now);
+            osc2.frequency.setValueAtTime(74, now);
+            osc1.frequency.exponentialRampToValueAtTime(48, now + 1.3);
+            osc2.frequency.exponentialRampToValueAtTime(51, now + 1.3);
+
+            droneGain.gain.setValueAtTime(0.0001, now);
+            droneGain.gain.exponentialRampToValueAtTime(0.13, now + 0.08);
+            droneGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+
+            osc1.connect(droneGain);
+            osc2.connect(droneGain);
+            droneGain.connect(audioCtx.destination);
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 1.45);
+            osc2.stop(now + 1.45);
+
+            const sub = audioCtx.createOscillator();
+            const subGain = audioCtx.createGain();
+            sub.type = 'sine';
+            sub.frequency.setValueAtTime(130, now);
+            sub.frequency.exponentialRampToValueAtTime(32, now + 0.3);
+            subGain.gain.setValueAtTime(0.0001, now);
+            subGain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+            subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+            sub.connect(subGain);
+            subGain.connect(audioCtx.destination);
+            sub.start(now);
+            sub.stop(now + 0.4);
+        }
+
+        function playBootSound() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            beep(660, now + 0.1, 0.08, 0.04);
+            beep(880, now + 0.3, 0.12, 0.05);
+        }
+
+        async function hashString(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        const logLines = [
+            { text: "[14:02:11 INFO]: Starting minecraft server version 1.2.5", type: "info", delay: 800 },
+            { text: "[14:02:11 INFO]: Loading properties", type: "info", delay: 300 },
+            { text: "[14:02:11 INFO]: Starting Minecraft server on *:25565", type: "info", delay: 200 },
+            { text: "[14:02:12 INFO]: Preparing level \"world_01\"", type: "info", delay: 900 },
+            { text: "[14:02:14 INFO]: Preparing start region for level 0", type: "info", delay: 1200 },
+            { text: "[14:06:15 INFO]: Done (4.12s)! For help, type \"help\" or \"?\"", type: "info", delay: 500 },
+            
+            { text: "[14:03:02 INFO]: Xx_VO1D_xX joined the game", type: "chat", delay: 2000 },
+            { text: "[14:04:45 INFO]: bell_ham_ham joined the game", type: "chat", delay: 2500 },
+            
+            { text: "[14:04:53 INFO]: <Xx_VO1D_xX> welcome bro!! press t to chat", type: "chat", delay: 1500 },
+            { text: "[14:05:52 INFO]: <bell_ham_ham> how do i move", type: "chat", delay: 2800 },
+            { text: "[14:06:12 INFO]: <Xx_VO1D_xX> dude its wasd, use your mouse to look around", type: "chat", delay: 2200 },
+            { text: "[14:08:32 INFO]: <bell_ham_ham> ok i see u", type: "chat", delay: 2500 },
+            { text: "[14:09:20 INFO]: <Xx_VO1D_xX> punch this tree by holding left click", type: "chat", delay: 2400 },
+            { text: "[14:09:25 INFO]: <bell_ham_ham> break it with my hands? that hurts dude", type: "chat", delay: 3200 },
+            { text: "[14:09:34 INFO]: <Xx_VO1D_xX> haha its minecraft logic dont worry", type: "chat", delay: 2000 },
+
+            { text: "[Server thread/ERROR]: Encountered an unexpected exception\njava.lang.NullPointerException: YOU SHOULD HAVE NOT ANSWERED HIM\n\tat net.minecraft.entity.player.EntityPlayerMP.tick(EntityPlayerMP.java:187)\n\tat net.minecraft.world.WorldServer.updateEntities(WorldServer.java:441)\n\tat net.minecraft.server.MinecraftServer.tick(MinecraftServer.java:729)", type: "err", delay: 2000 },
+            
+            { text: "[14:10:28 INFO]: <bell_ham_ham> i got wood. now what", type: "chat", delay: 1500 },
+            
+            { text: "[Server thread/ERROR]: Encountered an unexpected exception\njava.lang.IllegalStateException: IT IS YOUR FAULT.\n\tat net.minecraft.entity.EntityLivingBase.onDeath(EntityLivingBase.java:1102)\n\tat net.minecraft.entity.player.EntityPlayer.onDeath(EntityPlayer.java:598)\n\tat net.minecraft.server.MinecraftServer.tick(MinecraftServer.java:3947)", type: "err", delay: 1800 },
+            
+            { text: "[14:10:46 INFO]: <Xx_VO1D_xX> press E and put it in the 2x2 grid to make planks", type: "chat", delay: 1200 },
+            { text: "[14:10:54 INFO]: <bell_ham_ham> ok this is cool", type: "chat", delay: 2200 },
+            { text: "[14:11:32 INFO]: <bell_ham_ham> i'm glad you invited me", type: "chat", delay: 3500 },
+
+            { text: "Exception in thread \"Server thread\" java.lang.StackOverflowError: WHY DID YOU RAISE YOUR HAND?\n\tat net.minecraft.client.entity.EntityPlayerSP.onUpdate(EntityPlayerSP.java:266)\n\t... 3947 more", type: "err", delay: 1500 },
+            { text: "Caused by: java.lang.StackOverflowError: THERE WAS ANOTHER WAY.\n\tat net.minecraft.client.entity.EntityPlayerSP.onUpdate(EntityPlayerSP.java:266)\n\t... 3948 more", type: "err", delay: 400 },
+            { text: "Caused by: java.lang.StackOverflowError: WHY?\n\tat net.minecraft.client.entity.EntityPlayerSP.onUpdate(EntityPlayerSP.java:266)\n\t... 3949 more", type: "err", delay: 400 },
+            
+            { text: "[14:11:40 INFO]: Connection lost.", type: "info", delay: 1800 }
+        ];
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function runLogs() {
+            for (let i = 0; i < logLines.length; i++) {
+                const line = logLines[i];
+                await sleep(line.delay);
+                
+                const lineEl = document.createElement('div');
+                lineEl.className = 'log-line';
+
+                lineEl.innerText = line.text;
+
+                if (line.type === 'err') {
+                    lineEl.classList.add('sys-err');
+                    playGlitchSound();
+                } else {
+                    lineEl.classList.add(line.type === 'chat' ? 'log-chat' : 'log-info');
+                    typeTick();
+                }
+                
+                terminal.appendChild(lineEl);
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        accessInput.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+
+            const rawInput = accessInput.value.trim();
+            const userHash = await hashString(rawInput);
+
+            if (userHash === ACCESS_HASH) {
+                accessStatus.style.color = '#00ff66';
+                accessStatus.innerText = '> ACCESS GRANTED';
+                accessInput.value = '';
+                document.body.classList.add('unlocked');
+                setTimeout(() => {
+                    accessGate.style.display = 'none';
+                    bootGate.click();
+                }, 500);
+                return;
+            }
+
+            accessStatus.style.color = '#ff3333';
+            accessStatus.innerText = '> ACCESS DENIED';
+            accessInput.value = '';
+        });
+
+        document.body.classList.remove('unlocked');
+        setTimeout(() => accessInput.focus(), 200);
+
+        bootGate.addEventListener('click', () => {
+            bootGate.style.display = 'none';
+            playBootSound();
+            terminal.classList.add('visible');
+            
+            setTimeout(() => {
+                runLogs();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
