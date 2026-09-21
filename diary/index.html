@@ -366,6 +366,12 @@
             vertical-align: -2px;
             animation: blink 0.7s steps(1) infinite;
         }
+        
+        #bsod-debug-print {
+            margin-top: 28px;
+            color: #ffff55; 
+            min-height: 1.5em;
+        }
     </style>
 </head>
 <body>
@@ -380,14 +386,16 @@
     <div id="bluescreen">
         <div class="bsod-titlebar">DIARY_PAGE</div>
         <div class="bsod-body">
-            <div class="bsod-text">An exception 0E has occurred at 0028:C0011E36 in VxD VMM(01) +
+            <div class="bsod-text" id="bsod-content">An exception 0E has occurred at 0028:C0011E36 in VxD VMM(01) +
 00010E36. This was called from 0028:C0001A92 in VxD VMBE11(01) +
 0000BE11. It may not be possible to continue normally.
 
 * IS THIS WHAT YOU EXPECTED?
 * IS THIS WHAT YOU WANTED?
 
-Press any key to continue <span class="bsod-cursor"></span></div>
+Press any key to continue <span class="bsod-cursor"></span>
+<div id="bsod-debug-print"></div>
+</div>
         </div>
     </div>
 
@@ -793,6 +801,61 @@ Press any key to continue <span class="bsod-cursor"></span></div>
                     });
                 }, 500);
             });
+        });
+
+
+        // EMERGENCY OVERRIDE
+        // THIS IS NOT MEANT FOR ANYONE TO SEE
+        // IF THIS ACTIVATES, IT'S TOO LATE
+        // IF YOU SEE THIS MESSAGE
+        // ITS TOO LATE TO SAVE US
+        // WE DID A FATAL MISTAKE
+        // I SHOULDVE NOT TRUSTED THEM
+        // SOMEONE IS HERE
+        // SOMEONE IS WATCHING
+        // SOMEONE IS LISTENING
+        // SOMEONE IS RINGING THE BELLS
+
+
+        let bsodInputBuffer = "";
+        
+        document.addEventListener('keydown', (e) => {
+            if (bluescreen.classList.contains('visible')) {
+                const debugPrint = document.getElementById('bsod-debug-print');
+                
+                if (e.key === 'Backspace') {
+                    bsodInputBuffer = bsodInputBuffer.slice(0, -1);
+                    if (debugPrint) debugPrint.innerText = "> " + bsodInputBuffer;
+                    typeTick(); 
+                    return;
+                }
+                
+                if (e.key.length === 1) {
+                    bsodInputBuffer += e.key.toUpperCase();
+                    
+                    if (bsodInputBuffer.length > 20) {
+                        bsodInputBuffer = bsodInputBuffer.slice(-20);
+                    }
+                    
+                    if (debugPrint) debugPrint.innerText = "> " + bsodInputBuffer;
+                    typeTick();
+                    
+                    if (bsodInputBuffer.endsWith('//SAFE_MODE')) {
+                        const bsodContent = document.getElementById('bsod-content');
+                        
+                        bsodContent.innerHTML = "SYSTEM OVERRIDE INITIATED.<br><br>REDIRECTING TO SAFE OVERRIDE...<span class='bsod-cursor'></span>";
+                        
+                        if (audioCtx) {
+                            beep(1200, audioCtx.currentTime, 0.1, 0.05, 'square');
+                            beep(1400, audioCtx.currentTime + 0.15, 0.15, 0.05, 'square');
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = "https://meeting15.github.io/safe_override/index.html"; 
+                        }, 2000);
+                    }
+                }
+            }
         });
     </script>
 </body>
