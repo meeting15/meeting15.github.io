@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>broadcastbroadcastbroadcastbroadcastbroadc</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            cursor: pointer; 
+        }
+
+        #init-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            pointer-events: none; 
+            transition: opacity 0.5s ease;
+        }
+
+        #click-text {
+            color: rgba(255, 255, 255, 0.15); 
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.7rem, 2vw, 1rem);
+            letter-spacing: 2px;
+            transition: opacity 0.5s ease;
+        }
+
+        #tv-container {
+            position: relative;
+            width: 80vw;
+            max-width: 900px;
+            aspect-ratio: 4 / 3;
+            background: #111;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 0 50px rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            opacity: 0; 
+        }
+
+        .turn-on {
+            opacity: 1 !important;
+            animation: crt-power-on 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes crt-power-on {
+            0% { transform: scale(1, 0.002); filter: brightness(5); }
+            35% { transform: scale(1, 0.002); filter: brightness(3); }
+            65% { transform: scale(1, 1); filter: brightness(1.5); }
+            100% { transform: scale(1, 1); filter: brightness(1); }
+        }
+
+        .turn-off {
+            animation: crt-power-off 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards !important;
+        }
+
+        @keyframes crt-power-off {
+            0% { transform: scale(1, 1); filter: brightness(1); opacity: 1; }
+            40% { transform: scale(1, 0.005); filter: brightness(5); opacity: 1; }
+            100% { transform: scale(0, 0.005); filter: brightness(10); opacity: 0; }
+        }
+
+        #tv-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.4) saturate(0.8);
+            animation: image-flicker 0.15s infinite;
+        }
+
+        #crt-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes image-flicker {
+            0% { opacity: 0.95; }
+            50% { opacity: 0.85; }
+            100% { opacity: 0.95; transform: translateY(1px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="init-overlay">
+        <div id="click-text">[ signal lost - click to scan ]</div>
+    </div>
+
+    <div id="tv-container">
+        <div id="crt-overlay"></div>
+        <img src="do_panic.png" id="tv-image" alt="EMERGENCY">
+    </div>
+
+    <audio id="creepy-audio" src="fault.wav" preload="auto"></audio>
+
+    <script>
+        let isTriggered = false;
+
+        document.body.addEventListener('click', () => {
+            if (isTriggered) return;
+            isTriggered = true; 
+            
+            const audio = document.getElementById('creepy-audio');
+            const overlay = document.getElementById('init-overlay');
+            const clickText = document.getElementById('click-text');
+            const tvContainer = document.getElementById('tv-container');
+            
+            audio.volume = 0.6;
+
+            audio.play().then(() => {
+                audio.addEventListener('ended', triggerShutOff);
+            }).catch(e => {
+                console.log("Audio missing. Fallback timer started.");
+                setTimeout(triggerShutOff, 15000); 
+            }); 
+            
+            document.body.style.cursor = 'default';
+            overlay.style.opacity = '0';
+            
+            setTimeout(() => {
+                tvContainer.classList.add('turn-on');
+            }, 3000);
+
+            function triggerShutOff() {
+                tvContainer.classList.add('turn-off');
+                
+                setTimeout(() => {
+                    clickText.innerText = "[ connection terminated ]";
+                    overlay.style.opacity = '1';
+
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+
+                }, 1500);
+            }
+        });
+    </script>
+
+</body>
+</html>

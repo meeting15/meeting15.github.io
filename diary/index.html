@@ -31,6 +31,7 @@
             padding: clamp(16px, 3vw, 32px);
             overflow-x: hidden;
             user-select: none;
+            transition: opacity 1s ease;
         }
 
         body::before {
@@ -238,6 +239,16 @@
             filter: saturate(1.25) contrast(1.08) brightness(1.06);
         }
 
+        /* Added cursor pointer to the flower specifically so it feels interactive */
+        #panel-2 img {
+            cursor: pointer;
+            transition: filter 0.2s ease;
+        }
+
+        #panel-2 img:active {
+            filter: saturate(0) contrast(2) brightness(0.5);
+        }
+
         .caption {
             margin-top: 14px;
             padding-top: 10px;
@@ -301,20 +312,10 @@
         .footer.visible { opacity: 1; }
 
         @media (max-width: 640px) {
-            body {
-                padding: 14px;
-            }
-
-            h1 {
-                letter-spacing: 4px;
-            }
-
-            .tag,
-            .footer {
-                letter-spacing: 1.5px;
-            }
+            body { padding: 14px; }
+            h1 { letter-spacing: 4px; }
+            .tag, .footer { letter-spacing: 1.5px; }
         }
-
 
         #bluescreen {
             position: fixed;
@@ -329,9 +330,7 @@
             box-sizing: border-box;
         }
 
-        #bluescreen.visible {
-            display: flex;
-        }
+        #bluescreen.visible { display: flex; }
 
         .bsod-titlebar {
             background: #ffffff;
@@ -545,7 +544,6 @@ Press any key to continue <span class="bsod-cursor"></span>
             }
             return curve;
         }
-
 
         function playCrashSound() {
             if (!audioCtx) return;
@@ -803,20 +801,6 @@ Press any key to continue <span class="bsod-cursor"></span>
             });
         });
 
-
-        // EMERGENCY OVERRIDE
-        // THIS IS NOT MEANT FOR ANYONE TO SEE
-        // IF THIS ACTIVATES, IT'S TOO LATE
-        // IF YOU SEE THIS MESSAGE
-        // ITS TOO LATE TO SAVE US
-        // WE DID A FATAL MISTAKE
-        // I SHOULDVE NOT TRUSTED THEM
-        // SOMEONE IS HERE
-        // SOMEONE IS WATCHING
-        // SOMEONE IS LISTENING
-        // SOMEONE IS RINGING THE BELLS
-
-
         let bsodInputBuffer = "";
         
         document.addEventListener('keydown', (e) => {
@@ -857,6 +841,27 @@ Press any key to continue <span class="bsod-cursor"></span>
                 }
             }
         });
+
+        let flowerClickCount = 0;
+        const flowerImg = document.querySelector('#panel-2 img');
+        
+        if (flowerImg) {
+            flowerImg.addEventListener('click', () => {
+                flowerClickCount++;
+                
+                if (audioCtx) beep(200 + (flowerClickCount * 50), audioCtx.currentTime, 0.05, 0.05, 'square');
+                
+                if (flowerClickCount >= 3) {
+                    if (audioCtx) beep(100, audioCtx.currentTime, 0.8, 0.1, 'sawtooth');
+                    document.body.style.opacity = '0';
+                    
+
+                    setTimeout(() => {
+                        window.location.href = "https://meeting15.github.io/emergency/index.html";
+                    }, 1200);
+                }
+            });
+        }
     </script>
 </body>
 </html>
